@@ -83,7 +83,7 @@ for i in 1:nseries
         # Tell the network which series this is.
         inputrow[i + 2] = 1.0
         prepend!(inputrows, [inputrow])
-        prepend!(outputrows, [seriesvs[s]])
+        prepend!(outputrows, [map(x -> [x], seriesvs[s])])
     end
 end
 
