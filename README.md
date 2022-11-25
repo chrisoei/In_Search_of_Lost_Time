@@ -18,6 +18,10 @@ of the economy at a particular time, and thereby give better predictions.
 ```Julia
 seriestype["CPIAUCNS"] = "exponential"
 ```
+* You'll need to install some dependencies. I used Julia version 1.8.3 (the latest as of 2022-11-25).
+```Julia
+(@v1.8) pkg> add CSV, DataFrames, Flux, Stardates, TimeZones
+```
 * Load the script:
 ```Julia
 julia> include("fullpathnameforthescript/time_regained.jl")
