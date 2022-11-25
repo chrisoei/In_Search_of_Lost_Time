@@ -12,10 +12,14 @@ nseries = length(datafiles)
 seriestype = Dict{String, String}()
 seriestype["ACTLISCOU29820"] = "exponential"
 seriestype["CPIAUCNS"] = "exponential"
+seriestype["FEDFUNDS"] = "linear"
 seriestype["GASREGW"] = "exponential"
 seriestype["GDPA"] = "exponential"
+seriestype["LVXRNSA"] = "exponential"
 seriestype["MEDDAYONMAR29820"] = "linear"
 seriestype["MORTGAGE30US"] = "linear"
+seriestype["MSACSR"] = "linear"
+seriestype["SFXRNSA"] = "exponential"
 seriestype["UNRATE"] = "linear"
 seriestype["WILL5000IND"] = "exponential"
 seriesnames = map(x -> replace(x, r"\.csv$" => ""), datafiles)
