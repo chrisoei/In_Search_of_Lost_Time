@@ -10,6 +10,13 @@ I thought that by training a single network on related timeseries, the performan
 particular timeseries might be enhanced -- the network might gain a deeper understanding
 of the economy at a particular time, and thereby give better predictions.
 
+For example, some timeseries (like stock market data) is reported very frequently, whereas others
+(like inflation or GDP) is reported less often. In the past, I used interpolation to guess at
+the values in between the reporting dates, but a neural network should be able to do better;
+a neural network that "knows" the price of oil in between the reporting dates for inflation
+might have a good guess at what inflation is doing in between.
+
+
 # Usage
 
 * Download CSV files from https://fred.stlouisfed.org/ and put them into an empty directory.
