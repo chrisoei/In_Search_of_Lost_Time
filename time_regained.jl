@@ -117,15 +117,12 @@ for i1 in 1:1000
     @info "Training iteration $i1"
     global oldloss = currentloss
     for d1 in data1
-        l1 = length(d1)
+        l1 = length(d1[1])
+        #@info "Sub-iteration length: $l1"
         batchx = d1[1]
         batchy = d1[2]
         gs = Flux.gradient(p) do
-            s0 = 0.0
-            for i2 in 1:l1
-                s0 += loss([batchx[i2]], [batchy[i2]])
-            end
-            return s0
+            return sum(map(x->loss(x...), zip(batchx, batchy)))
         end
         Flux.Optimise.update!(opt, p, gs)
     end
