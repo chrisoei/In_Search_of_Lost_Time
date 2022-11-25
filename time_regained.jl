@@ -13,7 +13,7 @@ seriestype = Dict{String, String}()
 seriestype["ACTLISCOU29820"] = "exponential"
 seriestype["CPIAUCNS"] = "exponential"
 seriestype["GASREGW"] = "exponential"
-seriestype["GDPA"] = "linear"
+seriestype["GDPA"] = "exponential"
 seriestype["MEDDAYONMAR29820"] = "linear"
 seriestype["MORTGAGE30US"] = "linear"
 seriestype["UNRATE"] = "linear"
@@ -107,13 +107,13 @@ p = Flux.params(model)
 @info "Defining loss function"
 loss(x, y) = Flux.mse(model(x), y)
 @info "Defining optimization"
-learnrate = 0.1
+learnrate = 0.01
 opt = Flux.Descent(learnrate)
 data0 = collect(zip(inputrows, outputrows))
 currentloss = sum(map(x -> loss(x...), data0))
 @info "currentloss:", currentloss, "learnrate:", learnrate
 
-for i1 in 1:1000
+for i1 in 1:10
     @info "Training iteration $i1"
     global oldloss = currentloss
     for d1 in data1
@@ -122,9 +122,13 @@ for i1 in 1:1000
         batchx = d1[1]
         batchy = d1[2]
         gs = Flux.gradient(p) do
-            return sum(map(x->loss(x...), zip(batchx, batchy)))
+            s0 = sum(map(x->loss(x...), zip(batchx, batchy)))
+            return s0
         end
         Flux.Optimise.update!(opt, p, gs)
+        s1 = sum(map(x->loss(x...), zip(batchx, batchy)))
+        #@info "Sub-iteration loss: $s1"
+        @assert(!isnan(s1))
     end
     global currentloss = sum(map(x -> loss(x...), data0))
     if currentloss > oldloss
@@ -135,6 +139,7 @@ for i1 in 1:1000
         global opt = Flux.Descent(learnrate)
     end
     @info "currentloss:", currentloss, "learnrate:", learnrate
+    @assert(!isnan(currentloss))
 end
 
 # vim: set et ff=unix ft=julia nocp sts=4 sw=4 ts=4:
