@@ -24,6 +24,7 @@ seriests = Dict{String, Vector{Float64}}()
 seriesvs = Dict{String, Vector{Float64}}()
 seriesminv = Dict{String, Float64}()
 seriesmaxv = Dict{String, Float64}()
+seriesindex = Dict{String, Int64}()
 min_time = nothing
 max_time = nothing
 
@@ -33,7 +34,9 @@ function date2stardate(d)::Float64
 end
 
 @info "Preprocessing: first pass"
-for s in seriesnames
+for i in 1:nseries
+    s = seriesnames[i]
+    seriesindex[s] = i
     global min_time, max_time
     println(s)
     tmp = CSV.File(joinpath(datadir, s * ".csv"),
@@ -120,6 +123,22 @@ opt = Flux.Descent(learnrate)
 data0 = collect(zip(inputrows, outputrows))
 currentloss = sum(map(x -> loss(x...), data0))
 @info "currentloss:", currentloss, "learnrate:", learnrate
+
+function predict(s::String, t::Float64)::Float64
+    is1 = seriesindex[s]
+    t1 = 2 * (t - min_time) / (max_time - min_time) - 1
+    t2 = 2 * (t - floor(t)) - 1
+    inputrow = zeros(nseries + 2)
+    inputrow[1] = t1
+    inputrow[2] = t2
+    inputrow[is1 + 2] = 1.0
+    v1 = model(inputrow)[1]
+    v2 = (v1 + 1) * (seriesmaxv[s] - seriesminv[s]) / 2 + seriesminv[s]
+    if seriestype[s] == "exponential"
+        v2 = exp(v2)
+    end
+    return v2
+end
 
 for i1 in 1:100
     @info "Training iteration $i1"
