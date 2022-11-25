@@ -30,6 +30,7 @@ function date2stardate(d)::Float64
     TimeZones.tz"America/New_York").sd
 end
 
+@info "Preprocessing: first pass"
 for s in seriesnames
     global min_time, max_time
     println(s)
@@ -64,12 +65,14 @@ for s in seriesnames
     end
 end
 
+@info "Preprocessing: second pass"
 inputrows = []
 outputrows = []
 for i in 1:nseries
     s = seriesnames[i]
-    println(s)
-    for t in seriests[s]
+    @info s
+    for j in 1:length(seriests[s])
+        t = seriests[s][j]
         global inputrows
         inputrow = zeros(nseries + 2)
         # Rescale time so that it falls between -1 and 1
@@ -83,11 +86,32 @@ for i in 1:nseries
         # Tell the network which series this is.
         inputrow[i + 2] = 1.0
         prepend!(inputrows, [inputrow])
-        prepend!(outputrows, [map(x -> [x], seriesvs[s])])
+        prepend!(outputrows, [[seriesvs[s][j]]])
     end
 end
 
 @info "min_time = $min_time"
 @info "max_time = $max_time"
+
+data1 = Flux.Data.DataLoader(
+    (inputrows, outputrows),
+    batchsize = 8,
+    shuffle = true)
+@info "Creating model"
+model = Flux.Chain(
+    Flux.Dense(nseries + 2, 32, Flux.relu),
+    Flux.Dense(32, 32, Flux.relu),
+    Flux.Dense(32, 1, Flux.identity))
+
+@info "Extracting parameters"
+p = Flux.params(model)
+@info "Defining loss function"
+loss(x, y) = Flux.mse(model(x), y)
+@info "Defining optimization"
+learnrate = 0.1
+opt = Flux.Descent(learnrate)
+data0 = collect(zip(inputrows, outputrows))
+currentloss = sum(map(x -> loss(x...), data0))
+@info "currentloss:", currentloss, "learnrate:", learnrate
 
 # vim: set et ff=unix ft=julia nocp sts=4 sw=4 ts=4:
