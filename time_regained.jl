@@ -22,6 +22,8 @@ seriesnames = map(x -> replace(x, r"\.csv$" => ""), datafiles)
 @assert(Set(map(x -> seriestype[x], seriesnames)) == Set(["exponential", "linear"]))
 seriests = Dict{String, Vector{Float64}}()
 seriesvs = Dict{String, Vector{Float64}}()
+seriesminv = Dict{String, Float64}()
+seriesmaxv = Dict{String, Float64}()
 min_time = nothing
 max_time = nothing
 
@@ -61,6 +63,8 @@ for s in seriesnames
         end
         seriests[s] = stardates
         seriesvs[s] = vals
+        seriesminv[s] = min(vals...)
+        seriesmaxv[s] = max(vals...)
     end
 end
 
@@ -85,7 +89,9 @@ for i in 1:nseries
         # Tell the network which series this is.
         inputrow[i + 2] = 1.0
         prepend!(inputrows, [inputrow])
-        prepend!(outputrows, [[seriesvs[s][j]]])
+        # Rescale the output value so that it falls between -1 and 1
+        v1 = 2 * (seriesvs[s][j] - seriesminv[s]) / (seriesmaxv[s] - seriesminv[s]) - 1
+        prepend!(outputrows, [[v1]])
     end
 end
 
@@ -98,9 +104,11 @@ data1 = Flux.Data.DataLoader(
     shuffle = true)
 @info "Creating model"
 model = Flux.Chain(
-    Flux.Dense(nseries + 2, 32, Flux.relu),
-    Flux.Dense(32, 32, Flux.relu),
-    Flux.Dense(32, 1, Flux.identity))
+    Flux.Dense(nseries + 2, 300, Flux.relu),
+    Flux.Dense(300, 300, Flux.relu),
+    Flux.Dense(300, 300, Flux.relu),
+    Flux.Dense(300, 300, Flux.relu),
+    Flux.Dense(300, 1, Flux.identity))
 
 @info "Extracting parameters"
 p = Flux.params(model)
@@ -113,7 +121,7 @@ data0 = collect(zip(inputrows, outputrows))
 currentloss = sum(map(x -> loss(x...), data0))
 @info "currentloss:", currentloss, "learnrate:", learnrate
 
-for i1 in 1:10
+for i1 in 1:100
     @info "Training iteration $i1"
     global oldloss = currentloss
     for d1 in data1
@@ -126,9 +134,9 @@ for i1 in 1:10
             return s0
         end
         Flux.Optimise.update!(opt, p, gs)
-        s1 = sum(map(x->loss(x...), zip(batchx, batchy)))
+        #s1 = sum(map(x->loss(x...), zip(batchx, batchy)))
         #@info "Sub-iteration loss: $s1"
-        @assert(!isnan(s1))
+        #@assert(!isnan(s1))
     end
     global currentloss = sum(map(x -> loss(x...), data0))
     if currentloss > oldloss
