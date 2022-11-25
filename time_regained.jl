@@ -40,7 +40,6 @@ for s in seriesnames
                    types = Dict("DATE" => Dates.Date, "VALUE" => Float64),
                    missingstring=["."])
     tmp = filter(x->typeof(x[:VALUE])<:Number, tmp)
-    seriesdata[s] = tmp
 
     ltmp = length(tmp)
     @info "length(tmp) = $ltmp"
@@ -113,5 +112,32 @@ opt = Flux.Descent(learnrate)
 data0 = collect(zip(inputrows, outputrows))
 currentloss = sum(map(x -> loss(x...), data0))
 @info "currentloss:", currentloss, "learnrate:", learnrate
+
+for i1 in 1:1000
+    @info "Training iteration $i1"
+    global oldloss = currentloss
+    for d1 in data1
+        l1 = length(d1)
+        batchx = d1[1]
+        batchy = d1[2]
+        gs = Flux.gradient(p) do
+            s0 = 0.0
+            for i2 in 1:l1
+                s0 += loss([batchx[i2]], [batchy[i2]])
+            end
+            return s0
+        end
+        Flux.Optimise.update!(opt, p, gs)
+    end
+    global currentloss = sum(map(x -> loss(x...), data0))
+    if currentloss > oldloss
+        global learnrate *= 0.9
+        if learnrate < 1.0e-6
+            break
+        end
+        global opt = Flux.Descent(learnrate)
+    end
+    @info "currentloss:", currentloss, "learnrate:", learnrate
+end
 
 # vim: set et ff=unix ft=julia nocp sts=4 sw=4 ts=4:
